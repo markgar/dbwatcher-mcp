@@ -312,6 +312,62 @@ All history tools accept these optional parameters:
 
 ---
 
+## Visualization with Mermaid Charts
+
+When presenting diagnostic results, consider offering **Mermaid charts** to help users visualize the data. Mermaid is natively supported in VS Code's markdown preview and provides excellent visual representations of performance data.
+
+### When to Offer Charts
+
+| Data Type | Recommended Chart | Example |
+|-----------|-------------------|----------|
+| Resource utilization over time | `xychart-beta` line/bar | CPU, Data IO, Log IO trends |
+| Wait types distribution | `pie` | Percentage breakdown of wait categories |
+| Query comparison | `xychart-beta` bar | Top queries by duration/CPU/reads |
+| Blocking chains | `flowchart` | Session blocking relationships |
+| Execution timeline | `gantt` | Query execution patterns over time |
+
+### How to Generate Charts
+
+The MCP tools return structured JSON with `time_series` arrays and aggregated data. Transform this data into Mermaid syntax:
+
+**Example: Resource Utilization Line Chart**
+```mermaid
+xychart-beta
+    title "CPU Utilization Over Time"
+    x-axis ["23:00", "23:15", "23:30", "23:45", "00:00"]
+    y-axis "CPU %" 0 --> 100
+    line [42, 67, 95, 72, 45]
+```
+
+**Example: Wait Types Pie Chart**
+```mermaid
+pie showData
+    title "Wait Distribution"
+    "PAGEIOLATCH" : 35
+    "SOS_SCHEDULER_YIELD" : 25
+    "ASYNC_NETWORK_IO" : 20
+    "LCK_M_X" : 12
+    "Other" : 8
+```
+
+**Example: Blocking Chain Flowchart**
+```mermaid
+flowchart LR
+    S55[Session 55<br/>Blocker] -->|LCK_M_X| S102[Session 102<br/>30s wait]
+    S55 -->|LCK_M_S| S108[Session 108<br/>45s wait]
+```
+
+### Presenting Charts to Users
+
+When offering visualizations:
+1. **Ask first**: "Would you like me to generate a chart for this data?"
+2. **Write to file**: Create a `.md` file (e.g., `performance-analysis.md`) with the Mermaid charts
+3. **Instruct to preview**: Tell the user to open the file and use `Cmd+Shift+V` (Mac) or `Ctrl+Shift+V` (Windows) to see the rendered charts
+
+**Pro tip**: Combine multiple chart types in a single markdown file to create a comprehensive diagnostic report.
+
+---
+
 ## External References
 
 For deeper analysis of specific issues:

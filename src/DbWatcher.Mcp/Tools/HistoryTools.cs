@@ -39,6 +39,32 @@ internal class HistoryTools
     };
 
     /// <summary>
+    /// Builds a KQL declare query_parameters statement from the parameters dictionary.
+    /// Maps .NET types to KQL types.
+    /// </summary>
+    private static string BuildParameterDeclaration(Dictionary<string, object> parameters)
+    {
+        if (parameters.Count == 0)
+            return "";
+            
+        var declarations = parameters.Select(p => 
+        {
+            var kqlType = p.Value switch
+            {
+                int => "int",
+                long => "long",
+                double => "real",
+                bool => "bool",
+                DateTime => "datetime",
+                _ => "string"
+            };
+            return $"{p.Key}:{kqlType}";
+        });
+        
+        return $"declare query_parameters ({string.Join(", ", declarations)});";
+    }
+
+    /// <summary>
     /// Builds a parameterized time filter for sample_time_utc column.
     /// Returns the KQL filter clause and adds parameters to the dictionary.
     /// </summary>
@@ -107,10 +133,11 @@ internal class HistoryTools
         
         var benignWaitsList = string.Join("', '", BenignWaits);
         var timeFilter = GetTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
-        // Using parameterized query - DatabaseName and TopN are declared as parameters
+        // Using parameterized query - parameters are declared dynamically
         var query = $@"
-declare query_parameters (DatabaseName:string, TopN:int);
+{paramDeclaration}
 let benign_waits = dynamic(['{benignWaitsList}']);
 let filtered_waits = sqldb_database_wait_stats
     | where {timeFilter}
@@ -193,6 +220,7 @@ filtered_waits
         };
         
         var timeFilter = GetCollectionTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
         
         // Validate and map orderBy to prevent injection (orderColumn is not parameterizable in KQL)
         var orderColumn = orderBy.ToLower() switch
@@ -204,7 +232,7 @@ filtered_waits
         };
 
         var query = $@"
-declare query_parameters (DatabaseName:string, TopN:int);
+{paramDeclaration}
 sqldb_database_query_runtime_stats
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -287,9 +315,10 @@ sqldb_database_query_runtime_stats
             parameters["WaitCategory"] = waitCategory;
             categoryFilter = "| where wait_category == WaitCategory";
         }
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string, TopN:int{(string.IsNullOrEmpty(waitCategory) ? "" : ", WaitCategory:string")});
+{paramDeclaration}
 sqldb_database_query_wait_stats
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -351,9 +380,10 @@ sqldb_database_query_wait_stats
         };
         
         var timeFilter = GetTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string, MinDurationSec:int);
+{paramDeclaration}
 sqldb_database_active_sessions
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -424,9 +454,10 @@ sqldb_database_active_sessions
             "hour" => "1h",
             _ => "1m"
         };
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string);
+{paramDeclaration}
 sqldb_database_resource_utilization
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -510,9 +541,10 @@ sqldb_database_resource_utilization
         };
         
         var timeFilter = GetTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string);
+{paramDeclaration}
 sqldb_database_performance_counters_common
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -581,9 +613,10 @@ sqldb_database_performance_counters_common
         };
         
         var timeFilter = GetTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string);
+{paramDeclaration}
 sqldb_database_storage_io
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -660,9 +693,10 @@ sqldb_database_storage_io
         };
         
         var timeFilter = GetCollectionTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string, TopN:int);
+{paramDeclaration}
 sqldb_database_missing_indexes
 | where {timeFilter}
 | where database_name == DatabaseName
@@ -729,9 +763,10 @@ sqldb_database_missing_indexes
         };
         
         var timeFilter = GetCollectionTimeFilter(startTime, endTime, parameters);
+        var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
-declare query_parameters (DatabaseName:string, VarianceThreshold:real, MinExecutions:int);
+{paramDeclaration}
 sqldb_database_query_runtime_stats
 | where {timeFilter}
 | where database_name == DatabaseName

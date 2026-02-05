@@ -20,6 +20,7 @@ Database watcher collects telemetry from Azure SQL resources and stores it in a 
 - **Missing Indexes** - Get index recommendations to improve query performance
 - **Parameter Sniffing Detection** - Identify queries with high execution time variance
 - **Diagnostic Strategy** - Built-in methodology guide for systematic troubleshooting
+- **Visual Charts** - Generate Mermaid charts for time-series data, distributions, and blocking chains
 
 ## Prerequisites
 
@@ -100,6 +101,23 @@ You: Find the top queries causing those IO waits
 
 Copilot: [Shows top queries sorted by reads with recommendations]
 ```
+
+## Visualizing Results with Charts
+
+The MCP server returns structured JSON data that can be visualized using **Mermaid charts**. Copilot can generate these charts automatically when you ask for visual representations.
+
+**Example prompts:**
+- "Show me a chart of CPU usage over the last hour"
+- "Create a pie chart of wait type distribution"
+- "Visualize the blocking chain"
+
+Copilot will generate Mermaid markdown and can write it to a `.md` file. Open the file and preview it (`Cmd+Shift+V` on Mac, `Ctrl+Shift+V` on Windows) to see the rendered charts.
+
+**Supported chart types:**
+- Line/bar charts for resource utilization over time
+- Pie charts for wait type distributions
+- Flowcharts for blocking chains
+- Gantt charts for query execution timelines
 
 ## Building from Source
 
