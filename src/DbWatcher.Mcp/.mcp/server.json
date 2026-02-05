@@ -1,0 +1,22 @@
+{
+  "$schema": "https://static.modelcontextprotocol.io/schemas/2025-10-17/server.schema.json",
+  "description": "An MCP server for analyzing SQL database performance using database watcher telemetry stored in Kusto/ADX.",
+  "name": "io.github.markgar/dbwatcher-mcp",
+  "version": "0.1.0-beta",
+  "packages": [
+    {
+      "registryType": "nuget",
+      "identifier": "DbWatcher.Mcp",
+      "version": "0.1.0-beta",
+      "transport": {
+        "type": "stdio"
+      },
+      "packageArguments": [],
+      "environmentVariables": []
+    }
+  ],
+  "repository": {
+    "url": "https://github.com/markgar/dbwatcher-mcp",
+    "source": "github"
+  }
+}
