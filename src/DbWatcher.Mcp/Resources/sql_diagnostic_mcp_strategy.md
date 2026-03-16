@@ -29,6 +29,40 @@ Before diagnosis, establish a connection to the database watcher telemetry:
 
 ---
 
+## Telemetry Tables (Azure SQL Database)
+
+The database watcher data store contains the following tables for Azure SQL Database targets. Use the curated diagnostic tools when available. For ad-hoc exploration, use `run_kql`. To discover columns for any table, run `tablename | getschema` via `run_kql`.
+
+| Table | Collection Freq | Description |
+|-------|----------------|-------------|
+| `sqldb_database_active_sessions` | 30s | Sessions running requests, blocking, or with open transactions |
+| `sqldb_database_sql_backup_history` | 5min | Successfully completed database backups |
+| `sqldb_database_change_processing` | 1min | Aggregate log scan stats for CDC or Change Feed |
+| `sqldb_database_change_processing_errors` | 1min | Errors during change processing |
+| `sqldb_database_connectivity` | 30s | Connectivity probes (login + query) |
+| `sqldb_database_geo_replicas` | 30s | Geo-replica metadata and statistics |
+| `sqldb_database_index_metadata` | 30min | Index partitions with definition, properties, and operational stats |
+| `sqldb_database_memory_utilization` | 30s | Memory consumption by memory clerk |
+| `sqldb_database_missing_indexes` | 15min | Missing index recommendations from the query optimizer |
+| `sqldb_database_oom_events` | 1min | Out-of-memory events |
+| `sqldb_database_performance_counters_common` | 10s | Commonly used performance counters |
+| `sqldb_database_performance_counters_detailed` | 1min | Detailed performance counters for troubleshooting |
+| `sqldb_database_properties` | 5min | Database options, resource governance limits, metadata |
+| `sqldb_database_query_runtime_stats` | 15min | Query Store runtime execution statistics |
+| `sqldb_database_query_wait_stats` | 15min | Query Store wait category statistics |
+| `sqldb_database_replicas` | 30s | Database replica metadata and replication statistics |
+| `sqldb_database_resource_utilization` | 15s | CPU, Data IO, Log IO resource consumption |
+| `sqldb_database_session_stats` | 1min | Session statistics aggregated by login, host, app |
+| `sqldb_database_sos_schedulers` | 1min | SOS scheduler, CPU node, and memory node stats |
+| `sqldb_database_storage_io` | 10s | Cumulative IOPS, throughput, and latency per database file |
+| `sqldb_database_storage_utilization` | 1min | Database storage usage including tempdb, Query Store, PVS |
+| `sqldb_database_table_metadata` | 30min | Table/view metadata: row count, space, compression, constraints |
+| `sqldb_database_wait_stats` | 10s | Cumulative wait statistics by wait type |
+
+**Common columns** across all tables: `sample_time_utc`, `database_name`, `logical_server_name`, `replica_type`. Some tables also have `collection_time_utc` when collection time differs from sample time.
+
+---
+
 ## Diagnostic Phases
 
 Follow these phases in order. Analyze results at each step before proceeding. If critical issues are found (e.g., severe blocking, resource exhaustion), pivot to investigate that specific symptom immediately.

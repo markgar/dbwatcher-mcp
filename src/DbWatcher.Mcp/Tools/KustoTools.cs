@@ -1,5 +1,6 @@
 using System.ComponentModel;
 using System.Text.Json;
+using Azure.Identity;
 using Kusto.Data;
 using Kusto.Data.Net.Client;
 using ModelContextProtocol.Server;
@@ -38,8 +39,11 @@ internal class KustoTools
         {
             // Create a temporary connection to query the cluster's databases
             // We connect to the default 'NetDefaultDB' which always exists
+            var credential = new ChainedTokenCredential(
+                new DefaultAzureCredential(),
+                new InteractiveBrowserCredential());
             var connectionStringBuilder = new KustoConnectionStringBuilder(clusterUri, "NetDefaultDB")
-                .WithAadAzCliAuthentication();
+                .WithAadAzureTokenCredentialsAuthentication(credential);
 
             using var tempProvider = KustoClientFactory.CreateCslQueryProvider(connectionStringBuilder);
             
@@ -158,6 +162,42 @@ union resource_dbs, wait_dbs, query_dbs
             }),
             count = rows.Count,
             note = "Use the 'database_name' value when calling diagnostic tools like history_waits, history_queries, etc."
+        };
+
+        return JsonSerializer.Serialize(result, JsonOptions);
+    }
+
+    [McpServerTool(Name = "run_kql")]
+    [Description("Execute a read-only KQL query against the connected database watcher data store. Use this for ad-hoc exploration, schema discovery (e.g., 'tablename | getschema'), or queries not covered by the curated diagnostic tools. The query runs against the connected Kusto database. Results are limited to 500 rows.")]
+    public string RunKql(
+        [Description("The KQL query to execute. Must be a read-only query (no .set, .append, .drop, etc.).")] string query)
+    {
+        if (!_connectionService.IsConnected)
+        {
+            return JsonSerializer.Serialize(new { error = "Not connected to Kusto. Call connect_kusto first." }, JsonOptions);
+        }
+
+        // Block management/control commands that could modify data
+        var trimmed = query.TrimStart();
+        if (trimmed.StartsWith('.'))
+        {
+            return JsonSerializer.Serialize(new { error = "Management commands (starting with '.') are not allowed. Only read-only KQL queries are supported." }, JsonOptions);
+        }
+
+        var (success, rows, error) = _connectionService.ExecuteQuery(query);
+        if (!success)
+        {
+            return JsonSerializer.Serialize(new { error }, JsonOptions);
+        }
+
+        const int maxRows = 500;
+        var truncated = rows.Count > maxRows;
+        var result = new
+        {
+            row_count = rows.Count,
+            truncated,
+            truncated_to = truncated ? maxRows : (int?)null,
+            rows = rows.Take(maxRows)
         };
 
         return JsonSerializer.Serialize(result, JsonOptions);

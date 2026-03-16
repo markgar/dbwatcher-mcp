@@ -1,3 +1,4 @@
+using Azure.Identity;
 using Kusto.Data;
 using Kusto.Data.Common;
 using Kusto.Data.Net.Client;
@@ -65,9 +66,14 @@ public sealed class KustoConnectionService : IKustoConnectionService, IDisposabl
                     _currentDatabase = null;
                 }
 
-                // Build connection string with Azure CLI credential (DefaultAzureCredential)
+                // Try automatic credentials first (az cli, managed identity, VS, etc.)
+                // Fall back to interactive browser auth if none are available
+                var credential = new ChainedTokenCredential(
+                    new DefaultAzureCredential(),
+                    new InteractiveBrowserCredential());
+
                 var connectionStringBuilder = new KustoConnectionStringBuilder(clusterUri, database)
-                    .WithAadAzCliAuthentication();
+                    .WithAadAzureTokenCredentialsAuthentication(credential);
 
                 _queryProvider = KustoClientFactory.CreateCslQueryProvider(connectionStringBuilder);
                 _currentClusterUri = clusterUri;

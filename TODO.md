@@ -21,14 +21,22 @@
 
 ## Test Workload Generation (AdventureWorksLT)
 
-Need scripts/queries to intentionally generate problems for testing diagnostics:
+SQL scripts (run via `sqlcmd`) to intentionally generate problems for testing diagnostics.
+PowerShell orchestrator to run them concurrently and generate combined resource pressure.
 
-- [ ] **Blocking/Lock contention** - Long-running transactions holding locks while other sessions wait
-- [ ] **CPU pressure** - Expensive queries with lots of string manipulation, scalar UDFs, or missing indexes causing scans
-- [ ] **IO pressure / Memory pressure** - Queries scanning large tables without adequate indexes, forcing page reads from disk
-- [ ] **Parallelism waits** - Large scans/sorts that go parallel with high CXPACKET/CXSYNC_PORT
-- [ ] **Parameter sniffing** - Stored proc with parameter that causes wildly different plans
-- [ ] **Missing indexes** - Queries with predicates on non-indexed columns
-- [ ] **TempDB contention** - Heavy temp table usage or spills
+### Scripts to Create (`tests/workload/`)
 
-Ideas: Copilot can help generate these problem scenarios using AdventureWorksLT schema.
+- [ ] **cpu-pressure.sql** - Cross joins, string manipulation, scalar UDFs on SalesOrderDetail
+- [ ] **io-pressure.sql** - Full table scans with no covering index, large result sets forced to disk
+- [ ] **missing-indexes.sql** - Queries with WHERE on non-indexed columns (Product.Color, SalesOrderDetail.UnitPrice, etc.)
+- [ ] **blocking.sql** - Two-part script: session 1 holds locks via open transaction, session 2 tries to read/update same rows
+- [ ] **parameter-sniffing.sql** - Stored proc with parameter on skewed CustomerID distribution (few orders vs many orders)
+- [ ] **tempdb-contention.sql** - Heavy #temp table creation, large sorts/hashes that spill to TempDB
+- [ ] **parallelism.sql** - Large scans/sorts that go parallel with high CXPACKET/CXSYNC_PORT (tier-dependent)
+- [ ] **run-workload.ps1** - PowerShell orchestrator: runs all scripts concurrently via sqlcmd, generates sustained load for `history_resources` spikes
+
+### Notes
+- Blocking requires two concurrent `sqlcmd` sessions — orchestrator handles this
+- Parallelism depends on service tier (needs multiple cores)
+- Database watcher needs ~30-60s to collect telemetry after workload runs
+- All scripts should be safe to run repeatedly (idempotent, no permanent schema changes outside cleanup)

@@ -692,7 +692,7 @@ sqldb_database_storage_io
             ["TopN"] = topN
         };
         
-        var timeFilter = GetCollectionTimeFilter(startTime, endTime, parameters);
+        var timeFilter = GetTimeFilter(startTime, endTime, parameters);
         var paramDeclaration = BuildParameterDeclaration(parameters);
 
         var query = $@"
@@ -700,13 +700,14 @@ sqldb_database_storage_io
 sqldb_database_missing_indexes
 | where {timeFilter}
 | where database_name == DatabaseName
+| extend table_name = strcat(schema_name, '.', object_name)
 | summarize 
     AvgUserImpact = round(avg(avg_user_impact), 2),
     TotalUserSeeks = sum(user_seeks),
     TotalUserScans = sum(user_scans),
-    LastSeen = max(collection_time_utc),
+    LastSeen = max(sample_time_utc),
     SampleCount = count()
-    by table_name = statement, equality_columns, inequality_columns, included_columns
+    by table_name, equality_columns, inequality_columns, included_columns
 | extend ImpactScore = AvgUserImpact * (TotalUserSeeks + TotalUserScans)
 | order by ImpactScore desc
 | take TopN";
